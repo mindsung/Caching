@@ -23,7 +23,7 @@ namespace MindSung.Caching.Providers.Redis
             }
 
             this.connection = connection;
-            db = connection.GetDatabase();
+            Database = connection.GetDatabase();
             this.keyPrepend = keyPrepend + ".";
             this.slidingExpiry = slidingExpiry;
             keySetChannel = this.keyPrepend + "provider_keyset";
@@ -33,10 +33,11 @@ namespace MindSung.Caching.Providers.Redis
             keyDelHandler = (_, keyDel) => subHelper.PublishDelete(keyDel);
         }
 
+        protected readonly IDatabase Database;
+
         private ConnectionMultiplexer connection;
         private string keyPrepend;
         private bool slidingExpiry;
-        private IDatabase db;
         private ISubscriber sub;
         private SemaphoreSlim subSync = new SemaphoreSlim(1, 1);
         private CacheSubscriptionHelper subHelper = new CacheSubscriptionHelper();
@@ -58,9 +59,9 @@ namespace MindSung.Caching.Providers.Redis
         private async Task<bool> SetOrAdd(string key, string value, TimeSpan? expiry, bool isAdd)
         {
             var tasks = new Task<bool>[2];
-            tasks[0] = db.StringSetAsync(FullKey(key), value, expiry, isAdd ? When.NotExists : When.Always);
+            tasks[0] = Database.StringSetAsync(FullKey(key), value, expiry, isAdd ? When.NotExists : When.Always);
             tasks[1] = slidingExpiry && expiry.HasValue
-                ? db.StringSetAsync(ExpiryKey(key), (long)expiry.Value.TotalMilliseconds, expiry, isAdd ? When.NotExists : When.Always)
+                ? Database.StringSetAsync(ExpiryKey(key), (long)expiry.Value.TotalMilliseconds, expiry, isAdd ? When.NotExists : When.Always)
                 : Task.FromResult(true);
             await Task.WhenAll(tasks);
             if (tasks[0].Result)
@@ -96,7 +97,7 @@ namespace MindSung.Caching.Providers.Redis
             return SetOrAdd(key, value, expiry, false);
         }
 
-        class CacheValue : ICacheValue<string>
+        protected class CacheValue : ICacheValue<string>
         {
             public bool HasValue { get; set; }
             public string Value { get; set; }
@@ -109,8 +110,8 @@ namespace MindSung.Caching.Providers.Redis
                 throw new ArgumentException("Cache key cannot be null.", nameof(key));
             }
             var tasks = new Task<RedisValue>[2];
-            tasks[0] = db.StringGetAsync(FullKey(key));
-            tasks[1] = slidingExpiry ? db.StringGetAsync(ExpiryKey(key)) : Task.FromResult(RedisValue.Null);
+            tasks[0] = Database.StringGetAsync(FullKey(key));
+            tasks[1] = slidingExpiry ? Database.StringGetAsync(ExpiryKey(key)) : Task.FromResult(RedisValue.Null);
             var results = await Task.WhenAll(tasks);
             TimeSpan? expiry = null;
             if (results[0].HasValue && results[1].HasValue)
@@ -119,8 +120,8 @@ namespace MindSung.Caching.Providers.Redis
             }
             if (results[0].HasValue && expiry.HasValue)
             {
-                var nowait = db.KeyExpireAsync(FullKey(key), expiry);
-                nowait = db.KeyExpireAsync(ExpiryKey(key), expiry);
+                var nowait = Database.KeyExpireAsync(FullKey(key), expiry);
+                nowait = Database.KeyExpireAsync(ExpiryKey(key), expiry);
             }
             var value = new CacheValue();
             if (results[0].HasValue)
@@ -138,8 +139,8 @@ namespace MindSung.Caching.Providers.Redis
                 throw new ArgumentException("Cache key cannot be null.", nameof(key));
             }
             var tasks = new Task<bool>[2];
-            tasks[0] = db.KeyDeleteAsync(FullKey(key));
-            tasks[1] = slidingExpiry ? db.KeyDeleteAsync(ExpiryKey(key)) : Task.FromResult(true);
+            tasks[0] = Database.KeyDeleteAsync(FullKey(key));
+            tasks[1] = slidingExpiry ? Database.KeyDeleteAsync(ExpiryKey(key)) : Task.FromResult(true);
             await Task.WhenAll(tasks);
             if (tasks[0].Result)
             {
@@ -148,7 +149,7 @@ namespace MindSung.Caching.Providers.Redis
             return tasks[0].Result;
         }
 
-        private void PublishSet(string key)
+        protected void PublishSet(string key)
         {
             if (sub != null)
             {
@@ -156,7 +157,7 @@ namespace MindSung.Caching.Providers.Redis
             }
         }
 
-        private void PublishRemove(string key)
+        protected void PublishRemove(string key)
         {
             if (sub != null)
             {
