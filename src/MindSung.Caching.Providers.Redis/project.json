@@ -1,0 +1,18 @@
+﻿{
+  "version": "0.1.0-*",
+
+  "dependencies": {
+    "MindSung.Caching": "0.1.0-*",
+    "StackExchange.Redis": "1.1.608"
+  },
+
+  "frameworks": {
+    "net451": {},
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "dependencies": {
+        "NETStandard.Library": "1.6.0"
+      }
+    }
+  }
+}
