@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using ProtoBuf;
-
 namespace MindSung.Caching.MemoryCacheProvider.CacheBase
 {
     public interface ICache<T>
@@ -45,7 +43,6 @@ namespace MindSung.Caching.MemoryCacheProvider.CacheBase
 
     #region Related Public Entities
 
-    [ProtoContract]
     public class CacheItem<T>
     {
         public CacheItem() { }
@@ -56,25 +53,18 @@ namespace MindSung.Caching.MemoryCacheProvider.CacheBase
             this.ttlMs = ttlMs;
             this.slidingTtl = slidingTtl;
         }
-        [ProtoMember(1)]
         public string key;
-        [ProtoMember(2)]
         public T value;
-        [ProtoMember(3)]
         public int ttlMs; // 0 = default, max = don't expire
-        [ProtoMember(4)]
         public bool slidingTtl = true;
     }
 
-    [ProtoContract]
     public class CacheResult<T>
     {
         public CacheResult() { }
         public CacheResult(T value) { this.value = value; this.found = true; }
         public static CacheResult<T> NotFound() { return new CacheResult<T>(); }
-        [ProtoMember(1)]
         public bool found;
-        [ProtoMember(2)]
         public T value;
     }
 

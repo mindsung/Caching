@@ -2,7 +2,6 @@
   "version": "0.1.0-*",
 
   "dependencies": {
-    "protobuf-net": "2.1.0"
   },
 
   "frameworks": {
