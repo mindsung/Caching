@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using ProtoBuf;
 
-namespace MindSung.Caching
+namespace MindSung.Caching.MemoryCacheProvider.CacheBase
 {
     public interface ICache<T>
     {

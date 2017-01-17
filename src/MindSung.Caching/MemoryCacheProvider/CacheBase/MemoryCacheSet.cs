@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MindSung.Caching
+namespace MindSung.Caching.MemoryCacheProvider.CacheBase
 {
     public partial class MemoryCacheSet
     {
