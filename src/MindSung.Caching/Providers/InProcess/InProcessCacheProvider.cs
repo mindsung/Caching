@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MindSung.Caching.MemoryCacheProvider
+namespace MindSung.Caching.Providers.InProcess
 {
-    using CacheBase;
+    using MemoryCacheBase;
 
-    public class MemoryCacheProvider<T> : ICacheProvider<T>
+    public class InProcessCacheProvider<T> : ICacheProvider<T>
     {
         private static MemoryCacheSet cacheSet = MemoryCacheSet.Create();
 
-        internal MemoryCacheProvider(string cacheName, bool slidingExpiry)
+        internal InProcessCacheProvider(string cacheName, bool slidingExpiry)
         {
             cache = cacheSet.GetNamedCache<T>(cacheName, int.MaxValue, slidingExpiry);
             this.slidingExpiry = slidingExpiry;

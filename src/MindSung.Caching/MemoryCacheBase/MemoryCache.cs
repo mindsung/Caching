@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MindSung.Caching.MemoryCacheProvider.CacheBase
+namespace MindSung.Caching.MemoryCacheBase
 {
     public interface ICache<T>
     {
