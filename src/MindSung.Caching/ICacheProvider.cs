@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace MindSung.Caching
 {
-    public interface ICacheProvider<T>
+    public interface ICacheProvider<T> : IDisposable
     {
         Task<bool> Add(string key, T value, TimeSpan? expiry = null);
         Task Set(string key, T value, TimeSpan? expiry = null);

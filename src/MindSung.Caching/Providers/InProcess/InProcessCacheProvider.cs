@@ -114,5 +114,9 @@ namespace MindSung.Caching.Providers.InProcess
             subs.RemoveSubscription(key, subscriptionId);
             return Task.FromResult(true);
         }
+
+        public void Dispose()
+        {
+        }
     }
 }
