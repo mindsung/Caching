@@ -118,5 +118,30 @@ namespace MindSung.Caching.Providers.InProcess
         public void Dispose()
         {
         }
+
+        public Task Enqueue(string queueName, T value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ICacheValue<T>> Dequeue(string queueName, TimeSpan? timeout = default(TimeSpan?))
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ClearQueue(string queueName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task Synchronize(string context, Action action, TimeSpan? timeout = default(TimeSpan?), int maxConcurrent = 1)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = default(TimeSpan?), int maxConcurrent = 1)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
