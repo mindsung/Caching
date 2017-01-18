@@ -45,12 +45,11 @@ namespace MindSung.Caching.Providers
             {
                 foreach (var sub in keySubs.Values)
                 {
-                    var mySub = sub;
                     Task.Run(async () =>
                     {
                         try
                         {
-                            if (mySub.onSet != null) { await mySub.onSet(key); }
+                            if (sub.onSet != null) { await sub.onSet(key); }
                         }
                         catch { }
                     });
@@ -65,12 +64,11 @@ namespace MindSung.Caching.Providers
             {
                 foreach (var sub in keySubs.Values)
                 {
-                    var mySub = sub;
                     Task.Run(async () =>
                     {
                         try
                         {
-                            if (mySub.onSet != null) { await mySub.onDelete(key); }
+                            if (sub.onSet != null) { await sub.onDelete(key); }
                         }
                         catch { }
                     });
