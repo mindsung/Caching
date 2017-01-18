@@ -9,6 +9,10 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MindSung.Caching", "src\Min
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MindSung.Caching.Providers.Redis", "src\MindSung.Caching.Providers.Redis\MindSung.Caching.Providers.Redis.xproj", "{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2FCC3905-231D-4181-B65D-703E94DD9423}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MindSung.Test.Caching", "test\MindSung.Test.Caching\MindSung.Test.Caching.xproj", "{D649B114-58AC-49FD-A649-1F790C4C4923}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +27,10 @@ Global
 		{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D649B114-58AC-49FD-A649-1F790C4C4923}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D649B114-58AC-49FD-A649-1F790C4C4923}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D649B114-58AC-49FD-A649-1F790C4C4923}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D649B114-58AC-49FD-A649-1F790C4C4923}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -30,5 +38,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{DE3B1184-23F3-45FD-9C12-FA9D2ACD9AB9} = {97D23BE8-A35A-452D-A308-EE9E33DDF45A}
 		{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1} = {97D23BE8-A35A-452D-A308-EE9E33DDF45A}
+		{D649B114-58AC-49FD-A649-1F790C4C4923} = {2FCC3905-231D-4181-B65D-703E94DD9423}
 	EndGlobalSection
 EndGlobal
