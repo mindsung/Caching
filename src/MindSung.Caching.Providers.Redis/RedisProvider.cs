@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace MindSung.Caching.Providers.Redis
 {
-    public class RedisProvider : ICacheProvider<string>, IDisposable
+    public class RedisProvider : ICacheProvider, IDisposable
     {
         // Must be instantiated by the factory.
         internal RedisProvider(ConnectionMultiplexer connection, string keyPrepend, bool slidingExpiry)

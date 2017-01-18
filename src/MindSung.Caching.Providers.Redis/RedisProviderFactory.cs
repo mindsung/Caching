@@ -48,13 +48,14 @@ namespace MindSung.Caching.Providers.Redis
             return connection;
         }
 
-        public async Task<ICacheProvider<T>> GetNamedCacheProvider<T>(string cacheName, bool slidingExpiry)
+        public async Task<ICacheProvider> GetNamedCacheProvider(string name, bool slidingExpiry)
         {
-            if (typeof(T) != typeof(string))
-            {
-                throw new NotSupportedException("Type parameter T for RedisProviderFactory method must be type System.String.");
-            }
-            return (ICacheProvider<T>)(new RedisProvider(await GetConnection(), cacheName, slidingExpiry));
+            return new RedisProvider(await GetConnection(), name, slidingExpiry);
+        }
+
+        async Task<ICacheProvider<string>> ICacheProviderFactory<string>.GetNamedCacheProvider(string name, bool slidingExpiry)
+        {
+            return await GetNamedCacheProvider(name, slidingExpiry);
         }
 
         public void Dispose()

@@ -5,8 +5,13 @@ using System.Threading.Tasks;
 
 namespace MindSung.Caching
 {
-    public interface ICacheProviderFactory
+    public interface ICacheProviderFactory<T>
     {
-        Task<ICacheProvider<T>> GetNamedCacheProvider<T>(string name, bool slidingExpiry);
+        Task<ICacheProvider<T>> GetNamedCacheProvider(string name, bool slidingExpiry);
+    }
+
+    public interface ICacheProviderFactory : ICacheProviderFactory<string>
+    {
+        new Task<ICacheProvider> GetNamedCacheProvider(string name, bool slidingExpiry);
     }
 }

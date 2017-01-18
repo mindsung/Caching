@@ -16,9 +16,7 @@ namespace MindSung.Caching
         Task Unsubscribe(string key, Guid subscriptionId);
     }
 
-    public interface ICacheValue<T>
+    public interface ICacheProvider : ICacheProvider<string>
     {
-        bool HasValue { get; }
-        T Value { get; }
     }
 }
