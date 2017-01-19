@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace MindSung.Caching
+﻿namespace MindSung.Caching
 {
     public interface ICacheValue<T>
     {
