@@ -278,12 +278,12 @@ namespace MindSung.Caching.Providers.Redis
             return syncHelper.Synchronize(context, action, "1", timeout, maxConcurrent);
         }
 
-        public Task<string> SynchronizeGetOrAdd(string key, Func<string> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
+        public Task<string> SynchronizeGetOrAdd(string key, Func<string> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
         {
             return syncHelper.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }
 
-        public Task<string> SynchronizeGetOrAdd(string key, Func<Task<string>> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
+        public Task<string> SynchronizeGetOrAdd(string key, Func<Task<string>> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
         {
             return syncHelper.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }

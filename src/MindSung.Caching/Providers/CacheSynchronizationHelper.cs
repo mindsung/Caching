@@ -19,6 +19,10 @@ namespace MindSung.Caching.Providers
 
         public async Task Synchronize(string context, Func<Task> action, T anyValue, TimeSpan? timeout = null, int maxConcurrent = 1)
         {
+            if (maxConcurrent < 1)
+            {
+                throw new ArgumentException("Max concurrent cannot be less than 1.", nameof(maxConcurrent));
+            }
             var ctxKey = $"syncctx/{context}";
             var qKey = $"syncq/{context}";
             if (await cacheProvider.Add(ctxKey, anyValue, TimeSpan.MaxValue))

@@ -200,6 +200,10 @@ namespace MindSung.Caching.Providers.InProcess
 
         public async Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1)
         {
+            if (maxConcurrent < 1)
+            {
+                throw new ArgumentException("Max concurrent cannot be less than 1.", nameof(maxConcurrent));
+            }
             var sem = semaphores.GetOrAdd(context, new SemaphoreSlim(maxConcurrent, maxConcurrent));
             if (!(await sem.WaitAsync(timeout.HasValue ? timeout.Value : TimeSpan.MaxValue)))
             {
@@ -215,12 +219,12 @@ namespace MindSung.Caching.Providers.InProcess
             }
         }
 
-        public Task<T> SynchronizeGetOrAdd(string key, Func<T> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
+        public Task<T> SynchronizeGetOrAdd(string key, Func<T> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
         {
             return SynchronizeGetOrAdd(key, () => Task.FromResult(valueFactory()), expiry, syncTimeout);
         }
 
-        public async Task<T> SynchronizeGetOrAdd(string key, Func<Task<T>> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
+        public async Task<T> SynchronizeGetOrAdd(string key, Func<Task<T>> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
         {
             T value = default(T);
 
