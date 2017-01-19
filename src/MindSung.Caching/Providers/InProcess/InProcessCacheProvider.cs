@@ -53,19 +53,13 @@ namespace MindSung.Caching.Providers.InProcess
             return Task.FromResult(true);
         }
 
-        class CacheValue : ICacheValue<T>
-        {
-            public bool HasValue { get; set; }
-            public T Value { get; set; }
-        }
-
         public Task<ICacheValue<T>> Get(string key)
         {
             if (key == null)
             {
                 throw new ArgumentException("Cache key cannot be null.", nameof(key));
             }
-            CacheValue value = new CacheValue();
+            CacheValue<T> value = new CacheValue<T>();
             var item = cache.Get(key);
             if (item.found)
             {
@@ -160,7 +154,7 @@ namespace MindSung.Caching.Providers.InProcess
             T value;
             if (!timeout.HasValue || timeout.Value == TimeSpan.Zero)
             {
-                return new CacheValue { HasValue = TryPop(qi, out value), Value = value };
+                return new CacheValue<T> { HasValue = TryPop(qi, out value), Value = value };
             }
 
             Task notEmpty;
@@ -170,7 +164,7 @@ namespace MindSung.Caching.Providers.InProcess
             }
             if (TryPop(qi, out value))
             {
-                return new CacheValue { HasValue = true, Value = value };
+                return new CacheValue<T> { HasValue = true, Value = value };
             }
             var wait = Task.Delay(timeout.Value);
             while (await Task.WhenAny(notEmpty, wait) == notEmpty)
@@ -181,10 +175,10 @@ namespace MindSung.Caching.Providers.InProcess
                 }
                 if (TryPop(qi, out value))
                 {
-                    return new CacheValue { HasValue = true, Value = value };
+                    return new CacheValue<T> { HasValue = true, Value = value };
                 }
             }
-            return new CacheValue();
+            return new CacheValue<T>();
         }
 
         public Task QueueClear(string queueName)

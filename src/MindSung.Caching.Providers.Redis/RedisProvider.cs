@@ -99,12 +99,6 @@ namespace MindSung.Caching.Providers.Redis
             return SetOrAdd(key, value, expiry, false);
         }
 
-        protected class CacheValue : ICacheValue<string>
-        {
-            public bool HasValue { get; set; }
-            public string Value { get; set; }
-        }
-
         public async Task<ICacheValue<string>> Get(string key)
         {
             if (key == null)
@@ -125,7 +119,7 @@ namespace MindSung.Caching.Providers.Redis
                 var nowait = Database.KeyExpireAsync(FullKey(key), expiry);
                 nowait = Database.KeyExpireAsync(ExpiryKey(key), expiry);
             }
-            var value = new CacheValue();
+            var value = new CacheValue<string>();
             if (results[0].HasValue)
             {
                 value.HasValue = true;
@@ -231,7 +225,7 @@ namespace MindSung.Caching.Providers.Redis
             if (!timeout.HasValue || timeout.Value == TimeSpan.Zero)
             {
                 var value = await Database.ListRightPopAsync(FullQueueKey(queueName));
-                return new CacheValue { HasValue = value.HasValue, Value = value };
+                return new CacheValue<string> { HasValue = value.HasValue, Value = value };
             }
 
             // Just because we get a notification that something has been pushed
@@ -248,7 +242,7 @@ namespace MindSung.Caching.Providers.Redis
                 var value = await Database.ListRightPopAsync(FullQueueKey(queueName));
                 if (value.HasValue)
                 {
-                    return new CacheValue { HasValue = true, Value = value };
+                    return new CacheValue<string> { HasValue = true, Value = value };
                 }
 
                 var wait = Task.Delay(timeout.Value);
@@ -258,11 +252,11 @@ namespace MindSung.Caching.Providers.Redis
                     value = await Database.ListRightPopAsync(FullQueueKey(queueName));
                     if (value.HasValue)
                     {
-                        return new CacheValue { HasValue = true, Value = value };
+                        return new CacheValue<string> { HasValue = true, Value = value };
                     }
                 }
 
-                return new CacheValue();
+                return new CacheValue<string>();
             }
             finally
             {
