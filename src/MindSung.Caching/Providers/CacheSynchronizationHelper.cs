@@ -28,12 +28,12 @@ namespace MindSung.Caching.Providers
                 // We're the lucky one that gets to initialized the semaphore.
                 for (int i = 0; i < maxConcurrent - 1; i++)
                 {
-                    var nowait = cacheProvider.Enqueue(qKey, "1");
+                    var nowait = cacheProvider.QueuePush(qKey, "1");
                 }
             }
             else
             {
-                var qval = await cacheProvider.Dequeue(qKey, timeout);
+                var qval = await cacheProvider.QueuePop(qKey, timeout);
                 if (!qval.HasValue)
                 {
                     throw new TimeoutException($"Timeout waiting for synchronization context {context}.");
@@ -45,7 +45,7 @@ namespace MindSung.Caching.Providers
             }
             finally
             {
-                var nowait = cacheProvider.Enqueue(qKey, "1");
+                var nowait = cacheProvider.QueuePush(qKey, "1");
             }
         }
 
@@ -54,7 +54,7 @@ namespace MindSung.Caching.Providers
             var ctxKey = $"syncctx/{context}";
             var qKey = $"syncq/{context}";
             await cacheProvider.Delete(ctxKey);
-            await cacheProvider.ClearQueue(qKey);
+            await cacheProvider.QueueClear(qKey);
         }
     }
 }

@@ -14,9 +14,9 @@ namespace MindSung.Caching
         Task<Guid> Subscribe(string key, Action<string> onSet, Action<string> onDelete);
         Task<Guid> Subscribe(string key, Func<string, Task> onSet, Func<string, Task> onDelete);
         Task Unsubscribe(string key, Guid subscriptionId);
-        Task Enqueue(string queueName, T value);
-        Task<ICacheValue<T>> Dequeue(string queueName, TimeSpan? timeout = null);
-        Task ClearQueue(string queueName);
+        Task QueuePush(string queueName, T value);
+        Task<ICacheValue<T>> QueuePop(string queueName, TimeSpan? timeout = null);
+        Task QueueClear(string queueName);
         Task Synchronize(string context, Action action, TimeSpan? timeout = null, int maxConcurrent = 1);
         Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1);
     }

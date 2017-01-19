@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace MindSung.Caching.Providers.InProcess
 {
     using MemoryCacheBase;
+    using System.Threading;
 
     public class InProcessCacheProvider<T> : ICacheProvider<T>
     {
@@ -115,33 +117,113 @@ namespace MindSung.Caching.Providers.InProcess
             return Task.FromResult(true);
         }
 
+        private class QueueInfo
+        {
+            public Queue<T> queue = new Queue<T>();
+            public TaskCompletionSource<bool> tcsNotEmpty = new TaskCompletionSource<bool>();
+        }
+
+        private ConcurrentDictionary<string, QueueInfo> queues = new ConcurrentDictionary<string, QueueInfo>();
+
+        public Task QueuePush(string queueName, T value)
+        {
+            var qi = queues.GetOrAdd(queueName, new QueueInfo());
+            lock (qi)
+            {
+                qi.queue.Enqueue(value);
+                qi.tcsNotEmpty.TrySetResult(true);
+                return Task.FromResult(true);
+            }
+        }
+
+        private bool TryPop(QueueInfo qi, out T value)
+        {
+            lock (qi)
+            {
+                if (qi.queue.Count == 0)
+                {
+                    value = default(T);
+                    return false;
+                }
+                value = qi.queue.Dequeue();
+                if (qi.queue.Count == 0)
+                {
+                    qi.tcsNotEmpty = new TaskCompletionSource<bool>();
+                }
+                return true;
+            }
+        }
+
+        public async Task<ICacheValue<T>> QueuePop(string queueName, TimeSpan? timeout = null)
+        {
+            var qi = queues.GetOrAdd(queueName, new QueueInfo());
+            T value;
+            if (!timeout.HasValue || timeout.Value == TimeSpan.Zero)
+            {
+                return new CacheValue { HasValue = TryPop(qi, out value), Value = value };
+            }
+
+            Task notEmpty;
+            lock (qi)
+            {
+                notEmpty = qi.tcsNotEmpty.Task;
+            }
+            if (TryPop(qi, out value))
+            {
+                return new CacheValue { HasValue = true, Value = value };
+            }
+            var wait = Task.Delay(timeout.Value);
+            while (await Task.WhenAny(notEmpty, wait) == notEmpty)
+            {
+                lock (qi)
+                {
+                    notEmpty = qi.tcsNotEmpty.Task;
+                }
+                if (TryPop(qi, out value))
+                {
+                    return new CacheValue { HasValue = true, Value = value };
+                }
+            }
+            return new CacheValue();
+        }
+
+        public Task QueueClear(string queueName)
+        {
+            var qi = queues.GetOrAdd(queueName, new QueueInfo());
+            lock (qi)
+            {
+                qi.queue.Clear();
+                qi.tcsNotEmpty = new TaskCompletionSource<bool>();
+            }
+            return Task.FromResult(true);
+        }
+
+        private ConcurrentDictionary<string, SemaphoreSlim> semaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
+
+        public Task Synchronize(string context, Action action, TimeSpan? timeout = null, int maxConcurrent = 1)
+        {
+            return Synchronize(context, () => { action(); return Task.FromResult(true); }, timeout, maxConcurrent);
+        }
+
+        public async Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1)
+        {
+            var sem = semaphores.GetOrAdd(context, new SemaphoreSlim(maxConcurrent, maxConcurrent));
+            if (!(await sem.WaitAsync(timeout.HasValue ? timeout.Value : TimeSpan.MaxValue)))
+            {
+                throw new TimeoutException($"Timeout waiting for synchronization context {context}.");
+            }
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                sem.Release();
+            }
+        }
+
         public void Dispose()
         {
-        }
-
-        public Task Enqueue(string queueName, T value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ICacheValue<T>> Dequeue(string queueName, TimeSpan? timeout = default(TimeSpan?))
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ClearQueue(string queueName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Synchronize(string context, Action action, TimeSpan? timeout = default(TimeSpan?), int maxConcurrent = 1)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = default(TimeSpan?), int maxConcurrent = 1)
-        {
-            throw new NotImplementedException();
         }
     }
 }

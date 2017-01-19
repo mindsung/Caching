@@ -24,13 +24,15 @@ namespace MindSung.Caching.Providers.Redis
 
             this.connection = connection;
             Database = connection.GetDatabase();
-            this.keyPrepend = keyPrepend + ".";
+            this.keyPrepend = keyPrepend + "/";
             this.slidingExpiry = slidingExpiry;
             keySetChannel = this.keyPrepend + "provider_keyset";
             keyDelChannel = this.keyPrepend + "provider_keydel";
 
             keySetHandler = (_, keySet) => subHelper.PublishSet(keySet);
             keyDelHandler = (_, keyDel) => subHelper.PublishDelete(keyDel);
+
+            sync = new CacheSynchronizationHelper(this);
         }
 
         protected readonly IDatabase Database;
@@ -53,7 +55,7 @@ namespace MindSung.Caching.Providers.Redis
 
         private string ExpiryKey(string key)
         {
-            return FullKey(key) + ".ttl_";
+            return FullKey(key) + "/ttl";
         }
 
         private async Task<bool> SetOrAdd(string key, string value, TimeSpan? expiry, bool isAdd)
@@ -207,6 +209,84 @@ namespace MindSung.Caching.Providers.Redis
             return Task.FromResult(true);
         }
 
+        private string QueueKey(string queueName)
+        {
+            return queueName + "/Q";
+        }
+
+        private string FullQueueKey(string queueName)
+        {
+            return FullKey(QueueKey(queueName));
+        }
+
+        public Task QueuePush(string queueName, string value)
+        {
+            var task = Database.ListLeftPushAsync(FullQueueKey(queueName), value);
+            PublishSet(QueueKey(queueName));
+            return task;
+        }
+
+        public async Task<ICacheValue<string>> QueuePop(string queueName, TimeSpan? timeout = null)
+        {
+            if (!timeout.HasValue || timeout.Value == TimeSpan.Zero)
+            {
+                var value = await Database.ListRightPopAsync(FullQueueKey(queueName));
+                return new CacheValue { HasValue = value.HasValue, Value = value };
+            }
+
+            // Just because we get a notification that something has been pushed
+            // doesn't mean we'll get something from the queue, someone else may get
+            // it before we do. To avoid a timing window in which something has been
+            // place on the queue but we never get the notification, we always need to
+            // have an active, listening subscription prior to each attempt to pop.
+            // That is why we need to have a new task completion source ready to be
+            // set by the subsriber before each attempt to pop.
+            var pushed = new TaskCompletionSource<bool>();
+            var subId = await Subscribe(QueueKey(queueName), _ => pushed.TrySetResult(true), null);
+            try
+            {
+                var value = await Database.ListRightPopAsync(FullQueueKey(queueName));
+                if (value.HasValue)
+                {
+                    return new CacheValue { HasValue = true, Value = value };
+                }
+
+                var wait = Task.Delay(timeout.Value);
+                while (await Task.WhenAny(pushed.Task, wait) == pushed.Task)
+                {
+                    pushed = new TaskCompletionSource<bool>();
+                    value = await Database.ListRightPopAsync(FullQueueKey(queueName));
+                    if (value.HasValue)
+                    {
+                        return new CacheValue { HasValue = true, Value = value };
+                    }
+                }
+
+                return new CacheValue();
+            }
+            finally
+            {
+                var nowait = Unsubscribe(QueueKey(queueName), subId);
+            }
+        }
+
+        public Task QueueClear(string queueName)
+        {
+            return Delete(QueueKey(queueName));
+        }
+
+        private CacheSynchronizationHelper sync;
+
+        public Task Synchronize(string context, Action action, TimeSpan? timeout = null, int maxConcurrent = 1)
+        {
+            return sync.Synchronize(context, action, timeout, maxConcurrent);
+        }
+
+        public Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1)
+        {
+            return sync.Synchronize(context, action, timeout, maxConcurrent);
+        }
+
         public void Dispose()
         {
             if (sub != null)
@@ -214,31 +294,6 @@ namespace MindSung.Caching.Providers.Redis
                 sub.Unsubscribe(keySetChannel, keySetHandler);
                 sub.Unsubscribe(keyDelChannel, keyDelHandler);
             }
-        }
-
-        public Task Enqueue(string queueName, string value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ICacheValue<string>> Dequeue(string queueName, TimeSpan? timeout = default(TimeSpan?))
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ClearQueue(string queueName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Synchronize(string context, Action action, TimeSpan? timeout = default(TimeSpan?), int maxConcurrent = 1)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = default(TimeSpan?), int maxConcurrent = 1)
-        {
-            throw new NotImplementedException();
         }
     }
 }

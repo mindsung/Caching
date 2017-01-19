@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -8,10 +9,12 @@ using Xunit;
 using MindSung.Caching;
 using MindSung.Caching.Providers.InProcess;
 using MindSung.Caching.Providers.Redis;
+using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace MindSung.Test.Caching
 {
-    public class CacheTests : IDisposable
+    public class CacheTestBase : IDisposable
     {
         protected const int testConcurrency = 4;
         protected const int batchSize = 2500;
@@ -22,6 +25,7 @@ namespace MindSung.Test.Caching
         protected const int blockingQueueToleranceMs = 500;
         protected const int expirationMs = 500;
         protected const int expirationToleranceMs = 100;
+        protected const int syncConcurrency = 10;
 
         protected readonly TimeSpan cacheExpiry = TimeSpan.FromMinutes(5);
 
@@ -212,37 +216,195 @@ namespace MindSung.Test.Caching
             }
         }
 
+        protected async Task QueueOps(ICacheProviderFactory<string> factory, string cacheName, int size)
+        {
+            var cache = await factory.GetNamedCacheProvider(cacheName, false);
+            var items = new List<string>();
+            for (var i = 0; i < size; i++)
+            {
+                items.Add(i.ToString());
+            }
+            var queueName = "qtest";
+            // Clear the queue in case a previous failed test left values in it.
+            await cache.QueueClear(queueName);
+            // Queue push values.
+            var pushTasks = new List<Task>();
+            foreach (var item in items)
+            {
+                pushTasks.Add(cache.QueuePush(queueName, item));
+            }
+            await Task.WhenAll(pushTasks);
+            // Queue pop values.
+            var popTasks = new List<Task<ICacheValue<string>>>();
+            foreach (var item in items)
+            {
+                popTasks.Add(cache.QueuePop(queueName));
+            }
+            var results = await Task.WhenAll(popTasks);
+            for (var i = 0; i < items.Count; i++)
+            {
+                Assert.True(results[i].HasValue && items[i] == results[i].Value, $"Queue pop failed. Expected {items[i]}, got {results[i].Value}.");
+            }
+            // Ensure queue now empty.
+            var noItem = await cache.QueuePop(queueName);
+            Assert.True(!noItem.HasValue, $"Queue pop all failed. Expected no value, got {noItem.Value}.");
+            // Queue clear.
+            foreach (var item in items)
+            {
+                pushTasks.Add(cache.QueuePush(queueName, item));
+            }
+            await cache.QueueClear(queueName);
+            noItem = await cache.QueuePop(queueName);
+            Assert.True(!noItem.HasValue, $"Queue clear failed. Expected no value, got {noItem.Value}.");
+        }
+
+        protected async Task QueueBlocking(ICacheProviderFactory<string> factory, string cacheName)
+        {
+            var cache = await factory.GetNamedCacheProvider(cacheName, false);
+            var queueName = "qtest";
+            var queueValue = "hello";
+            Stopwatch timer = new Stopwatch();
+            var nowait = Task.Run(async () =>
+            {
+                timer.Start();
+                await Task.Delay(blockingQueueDelayMs);
+                var nowait2 = cache.QueuePush(queueName, queueValue);
+            });
+            var value = await cache.QueuePop(queueName, TimeSpan.FromMilliseconds(blockingQueueDelayMs + 5000));
+            timer.Stop();
+            Assert.True(value.HasValue && value.Value == queueValue, $"Blocking queue pop failed. Expected {queueValue}, got {value.Value}.");
+            Assert.True(timer.ElapsedMilliseconds > (blockingQueueDelayMs - blockingQueueToleranceMs)
+                && timer.ElapsedMilliseconds < (blockingQueueDelayMs + blockingQueueToleranceMs),
+                $"Blocking queue pop failed. Expected result within {blockingQueueToleranceMs} ms tolerance of {blockingQueueDelayMs} ms push delay, result took {timer.ElapsedMilliseconds} ms");
+        }
+
+        protected async Task SyncConcurrent(ICacheProviderFactory<string> factory, string cacheName, int maxConcurrent)
+        {
+            var cache = await factory.GetNamedCacheProvider(cacheName, false);
+            var context = Guid.NewGuid().ToString();
+            var concurrent = 0;
+            var topConcurrent = 0;
+            var countSync = new object();
+            var maxDict = new ConcurrentDictionary<string, bool>();
+            Action addConcurrent = () =>
+            {
+                bool isMax = false;
+                lock (countSync)
+                {
+                    concurrent++;
+                    Assert.True(concurrent <= maxConcurrent, $"Exceeded max concurrency, expected no more than {maxConcurrent} concurrent, got {concurrent}.");
+                    if (concurrent > topConcurrent)
+                    {
+                        topConcurrent = concurrent;
+                        if (topConcurrent == maxConcurrent)
+                        {
+                            isMax = true;
+                        }
+                    }
+                }
+                if (isMax && maxDict.TryAdd(context, true))
+                {
+                    Debug.WriteLine($"Sync context {context} reached max {maxConcurrent} concurrent.");
+                }
+            };
+            Action removeConcurrent = () =>
+            {
+                lock (countSync)
+                {
+                    concurrent--;
+                }
+            };
+            var tasks = new List<Task>();
+            var random = new Random();
+            var minWait = 100;
+            var maxWait = 500;
+            var taskCount = maxConcurrent * 10;
+            var syncTimeout = (maxWait * (taskCount / maxConcurrent)) + (maxWait * 2);
+            for (int i = 0; i < taskCount; i++)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    await cache.Synchronize(context, async () =>
+                    {
+                        addConcurrent();
+                        await Task.Delay(random.Next(minWait, maxWait));
+                        removeConcurrent();
+                    },
+                    TimeSpan.FromMilliseconds(syncTimeout), maxConcurrent);
+                }));
+            }
+            await Task.WhenAll(tasks);
+            Assert.True(topConcurrent == maxConcurrent, $"Failed to reach max concurrency, expected {maxConcurrent} concurrent, got {topConcurrent}.");
+        }
+
         public virtual void Dispose()
         {
         }
     }
 
-    public class InProc : CacheTests
+    public abstract class CacheTests : CacheTestBase
     {
-        private InProcessCacheProviderFactory<string> inProcCacheFactory = new InProcessCacheProviderFactory<string>();
+        public abstract ICacheProviderFactory<string> Factory { get; }
 
         [Fact]
         public Task CacheCRUD()
         {
-            return RunConcurrent(testConcurrency, () => CacheCRUD(inProcCacheFactory, Guid.NewGuid().ToString()));
+            return RunConcurrent(testConcurrency, () => CacheCRUD(Factory, Guid.NewGuid().ToString()));
         }
 
         [Fact]
         public Task CacheBatch()
         {
-            return RunConcurrent(testConcurrency, () => CacheBatch(inProcCacheFactory, Guid.NewGuid().ToString(), batchSize));
+            return RunConcurrent(testConcurrency, () => CacheBatch(Factory, Guid.NewGuid().ToString(), batchSize));
         }
 
         [Fact]
         public Task CacheExpiration()
         {
-            return RunConcurrent(testConcurrency, () => CacheExpiration(inProcCacheFactory, Guid.NewGuid().ToString()));
+            return RunConcurrent(testConcurrency, () => CacheExpiration(Factory, Guid.NewGuid().ToString()));
         }
 
         [Fact]
         public Task CacheNotifications()
         {
-            return RunConcurrent(testConcurrency, () => CacheNotifications(inProcCacheFactory, Guid.NewGuid().ToString(), notifySize));
+            return RunConcurrent(testConcurrency, () => CacheNotifications(Factory, Guid.NewGuid().ToString(), notifySize));
+        }
+
+        [Fact]
+        public Task QueueOps()
+        {
+            return RunConcurrent(testConcurrency, () => QueueOps(Factory, Guid.NewGuid().ToString(), queueSize));
+        }
+
+        [Fact]
+        public Task QueueBlocking()
+        {
+            var qname = Guid.NewGuid().ToString();
+            return RunConcurrent(blockingQueueConcurrency, () => QueueBlocking(Factory, qname));
+        }
+
+        [Fact]
+        public Task SyncLock()
+        {
+            var cacheName = Guid.NewGuid().ToString();
+            return RunConcurrent(testConcurrency, () => SyncConcurrent(Factory, cacheName, 1));
+        }
+
+        [Fact]
+        public Task SyncConcurrent()
+        {
+            var cacheName = Guid.NewGuid().ToString();
+            return RunConcurrent(testConcurrency, () => SyncConcurrent(Factory, cacheName, syncConcurrency));
+        }
+    }
+
+    public class InProc : CacheTests
+    {
+        private InProcessCacheProviderFactory<string> inProcFactory = new InProcessCacheProviderFactory<string>();
+
+        public override ICacheProviderFactory<string> Factory
+        {
+            get { return inProcFactory; }
         }
     }
 
@@ -250,34 +412,15 @@ namespace MindSung.Test.Caching
     {
         private RedisProviderFactory redisFactory = new RedisProviderFactory("localhost");
 
+        public override ICacheProviderFactory<string> Factory
+        {
+            get { return redisFactory; }
+        }
+
         public override void Dispose()
         {
             redisFactory.Dispose();
             base.Dispose();
-        }
-
-        [Fact]
-        public Task CacheCRUD()
-        {
-            return RunConcurrent(testConcurrency, () => CacheCRUD(redisFactory, Guid.NewGuid().ToString()));
-        }
-
-        [Fact]
-        public Task CacheBatch()
-        {
-            return RunConcurrent(testConcurrency, () => CacheBatch(redisFactory, Guid.NewGuid().ToString(), batchSize));
-        }
-
-        [Fact]
-        public Task CacheExpiration()
-        {
-            return RunConcurrent(testConcurrency, () => CacheExpiration(redisFactory, Guid.NewGuid().ToString()));
-        }
-
-        [Fact]
-        public Task CacheNotifications()
-        {
-            return RunConcurrent(testConcurrency, () => CacheNotifications(redisFactory, Guid.NewGuid().ToString(), notifySize));
         }
     }
 }
