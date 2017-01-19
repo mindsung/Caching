@@ -222,6 +222,35 @@ namespace MindSung.Caching.Providers.InProcess
             }
         }
 
+        public Task<T> SynchronizeGetOrAdd(string key, Func<T> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
+        {
+            return SynchronizeGetOrAdd(key, () => Task.FromResult(valueFactory()), expiry, syncTimeout);
+        }
+
+        public async Task<T> SynchronizeGetOrAdd(string key, Func<Task<T>> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
+        {
+            T value = default(T);
+
+            await Synchronize(key, async () =>
+            {
+                var cacheVal = await Get(key);
+                if (!cacheVal.HasValue)
+                {
+                    value = await valueFactory();
+                    // This should always be adding, but do a Set instead of Add
+                    // to ensure that even if something isn't working correctly,
+                    // the returned value will be the last value in cache.
+                    await Set(key, value, expiry);
+                }
+                else
+                {
+                    value = cacheVal.Value;
+                }
+            }, syncTimeout, 1);
+
+            return value;
+        }
+
         public void Dispose()
         {
         }

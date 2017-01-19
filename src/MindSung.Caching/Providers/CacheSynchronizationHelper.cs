@@ -5,30 +5,30 @@ using System.Threading.Tasks;
 
 namespace MindSung.Caching.Providers
 {
-    public class CacheSynchronizationHelper
+    public class CacheSynchronizationHelper<T>
     {
-        public CacheSynchronizationHelper(ICacheProvider<string> cacheProvider)
+        public CacheSynchronizationHelper(ICacheProvider<T> cacheProvider)
         {
             this.cacheProvider = cacheProvider;
         }
 
-        private ICacheProvider<string> cacheProvider;
+        private ICacheProvider<T> cacheProvider;
 
-        public Task Synchronize(string context, Action action, TimeSpan? timeout = null, int maxConcurrent = 1)
+        public Task Synchronize(string context, Action action, T anyValue, TimeSpan? timeout = null, int maxConcurrent = 1)
         {
-            return Synchronize(context, () => { action(); return Task.FromResult(true); }, timeout, maxConcurrent);
+            return Synchronize(context, () => { action(); return Task.FromResult(true); }, anyValue, timeout, maxConcurrent);
         }
 
-        public async Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1)
+        public async Task Synchronize(string context, Func<Task> action, T anyValue, TimeSpan? timeout = null, int maxConcurrent = 1)
         {
             var ctxKey = $"syncctx/{context}";
             var qKey = $"syncq/{context}";
-            if (await cacheProvider.Add(ctxKey, maxConcurrent.ToString(), TimeSpan.MaxValue))
+            if (await cacheProvider.Add(ctxKey, anyValue, TimeSpan.MaxValue))
             {
                 // We're the lucky one that gets to initialized the semaphore.
                 for (int i = 0; i < maxConcurrent - 1; i++)
                 {
-                    var nowait = cacheProvider.QueuePush(qKey, "1");
+                    var nowait = cacheProvider.QueuePush(qKey, anyValue);
                 }
             }
             else
@@ -45,8 +45,38 @@ namespace MindSung.Caching.Providers
             }
             finally
             {
-                var nowait = cacheProvider.QueuePush(qKey, "1");
+                var nowait = cacheProvider.QueuePush(qKey, anyValue);
             }
+        }
+
+        public Task<T> SynchronizeGetOrAdd(string key, Func<T> valueFactory, T anyValue, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
+        {
+            return SynchronizeGetOrAdd(key, () => Task.FromResult(valueFactory()), anyValue, expiry, syncTimeout);
+        }
+
+        public async Task<T> SynchronizeGetOrAdd(string key, Func<Task<T>> valueFactory, T anyValue, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
+        {
+            T value = default(T);
+
+            await Synchronize(key, async () =>
+            {
+                var cacheVal = await cacheProvider.Get(key);
+                if (!cacheVal.HasValue)
+                {
+                    value = await valueFactory();
+                    // This should always be adding, but do a Set instead of Add
+                    // to ensure that even if something isn't working correctly,
+                    // the returned value will be the last value in cache.
+                    await cacheProvider.Set(key, value, expiry);
+                }
+                else
+                {
+                    value = cacheVal.Value;
+                }
+            },
+            anyValue, syncTimeout, 1);
+
+            return value;
         }
 
         public async Task ResetContext(string context)

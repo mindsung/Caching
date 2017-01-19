@@ -26,6 +26,7 @@ namespace MindSung.Test.Caching
         protected const int expirationMs = 500;
         protected const int expirationToleranceMs = 100;
         protected const int syncConcurrency = 10;
+        protected const int syncGetOrAddTasks = 100;
 
         protected readonly TimeSpan cacheExpiry = TimeSpan.FromMinutes(5);
 
@@ -319,7 +320,7 @@ namespace MindSung.Test.Caching
             var minWait = 100;
             var maxWait = 500;
             var taskCount = maxConcurrent * 10;
-            var syncTimeout = (maxWait * (taskCount / maxConcurrent)) + (maxWait * 2);
+            var syncTimeout = (maxWait * (taskCount / maxConcurrent)) + (maxWait * 2) + 5000;
             for (int i = 0; i < taskCount; i++)
             {
                 tasks.Add(Task.Run(async () =>
@@ -335,6 +336,46 @@ namespace MindSung.Test.Caching
             }
             await Task.WhenAll(tasks);
             Assert.True(topConcurrent == maxConcurrent, $"Failed to reach max concurrency, expected {maxConcurrent} concurrent, got {topConcurrent}.");
+        }
+
+        protected async Task SyncGetOrAdd(ICacheProviderFactory<string> factory, string cacheName)
+        {
+            var cache = await factory.GetNamedCacheProvider(cacheName, false);
+            var key = "hello";
+            var createdVal = "";
+            var createdValCount = 0;
+            var tasks = new List<Task<string>>();
+            var maxTaskWait = 20;
+            var createWait = 1000;
+            var syncTimeout = (createWait * 2) + (maxTaskWait * syncGetOrAddTasks) + 5000;
+            var random = new Random();
+            for (int i = 0; i < syncGetOrAddTasks; i++)
+            {
+                var iMe = i;
+                tasks.Add(Task.Run(async () =>
+                {
+                    await Task.Delay(random.Next(1, maxTaskWait)); // This delay will cause the tasks to run the SynchronizeGetOrAdd in somewhat random order.
+                    return await cache.SynchronizeGetOrAdd(key, async () =>
+                    {
+                        Interlocked.Increment(ref createdValCount);
+                        await Task.Delay(createWait);
+                        createdVal = "from task " + iMe.ToString();
+                        return createdVal;
+                    },
+                    cacheExpiry, TimeSpan.FromMilliseconds(syncTimeout));
+                }));
+            }
+            try
+            {
+                var results = await Task.WhenAll(tasks);
+                Assert.True(createdValCount == 1, $"Synchronized get or add value factory ran too many times or did not run, expected 1, got {createdValCount}.");
+                Assert.True(results.All(v => v == createdVal), $"Synchronized get or add returned unexpected values, expected {createdVal}, got {string.Join(",", results.Where(v => v != createdVal).Distinct().ToArray())}.");
+                Debug.WriteLine($"Synchronized get or add added value \"{createdVal}\".");
+            }
+            finally
+            {
+                await cache.Delete(key);
+            }
         }
 
         public virtual void Dispose()
@@ -395,6 +436,12 @@ namespace MindSung.Test.Caching
         {
             var cacheName = Guid.NewGuid().ToString();
             return RunConcurrent(testConcurrency, () => SyncConcurrent(Factory, cacheName, syncConcurrency));
+        }
+
+        [Fact]
+        public Task SyncGetOrAdd()
+        {
+            return RunConcurrent(testConcurrency, () => SyncGetOrAdd(Factory, Guid.NewGuid().ToString()));
         }
     }
 
