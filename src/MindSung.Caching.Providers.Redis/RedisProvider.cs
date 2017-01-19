@@ -139,7 +139,7 @@ namespace MindSung.Caching.Providers.Redis
             await Task.WhenAll(tasks);
             if (tasks[0].Result)
             {
-                PublishRemove(key);
+                PublishDelete(key);
             }
             return tasks[0].Result;
         }
@@ -152,7 +152,7 @@ namespace MindSung.Caching.Providers.Redis
             }
         }
 
-        protected void PublishRemove(string key)
+        protected void PublishDelete(string key)
         {
             if (sub != null)
             {
