@@ -30,7 +30,7 @@ namespace MindSung.Caching.Providers.Redis
             keySetHandler = (_, keySet) => subHelper.PublishSet(keySet);
             keyDelHandler = (_, keyDel) => subHelper.PublishDelete(keyDel);
 
-            sync = new CacheSynchronizationHelper<string>(this);
+            syncHelper = new CacheSynchronizationHelper<string>(this);
         }
 
         protected readonly IDatabase Database;
@@ -45,6 +45,7 @@ namespace MindSung.Caching.Providers.Redis
         private string keyDelChannel;
         private Action<RedisChannel, RedisValue> keySetHandler;
         private Action<RedisChannel, RedisValue> keyDelHandler;
+        private CacheSynchronizationHelper<string> syncHelper;
 
         private string FullKey(string key)
         {
@@ -267,31 +268,29 @@ namespace MindSung.Caching.Providers.Redis
             return Delete(QueueKey(queueName));
         }
 
-        private CacheSynchronizationHelper<string> sync;
-
         public Task Synchronize(string context, Action action, TimeSpan? timeout = null, int maxConcurrent = 1)
         {
-            return sync.Synchronize(context, action, "1", timeout, maxConcurrent);
+            return syncHelper.Synchronize(context, action, "1", timeout, maxConcurrent);
         }
 
         public Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1)
         {
-            return sync.Synchronize(context, action, "1", timeout, maxConcurrent);
+            return syncHelper.Synchronize(context, action, "1", timeout, maxConcurrent);
         }
 
         public Task<string> SynchronizeGetOrAdd(string key, Func<string> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
         {
-            return sync.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
+            return syncHelper.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }
 
         public Task<string> SynchronizeGetOrAdd(string key, Func<Task<string>> valueFactory, TimeSpan? expiry = default(TimeSpan?), TimeSpan? syncTimeout = default(TimeSpan?))
         {
-            return sync.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
+            return syncHelper.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }
 
         public Task ResetSynchronizationContext(string context)
         {
-            return sync.ResetSynchronizationContext(context);
+            return syncHelper.ResetSynchronizationContext(context);
         }
 
         public void Dispose()
