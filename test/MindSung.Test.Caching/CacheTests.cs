@@ -334,8 +334,15 @@ namespace MindSung.Test.Caching
                     TimeSpan.FromMilliseconds(syncTimeout), maxConcurrent);
                 }));
             }
-            await Task.WhenAll(tasks);
-            Assert.True(topConcurrent == maxConcurrent, $"Failed to reach max concurrency, expected {maxConcurrent} concurrent, got {topConcurrent}.");
+            try
+            {
+                await Task.WhenAll(tasks);
+                Assert.True(topConcurrent == maxConcurrent, $"Failed to reach max concurrency, expected {maxConcurrent} concurrent, got {topConcurrent}.");
+            }
+            finally
+            {
+                await cache.ResetSynchronizationContext(context);
+            }
         }
 
         protected async Task SyncGetOrAdd(ICacheProviderFactory<string> factory, string cacheName)
@@ -375,6 +382,7 @@ namespace MindSung.Test.Caching
             finally
             {
                 await cache.Delete(key);
+                await cache.ResetSynchronizationContext(key);
             }
         }
 

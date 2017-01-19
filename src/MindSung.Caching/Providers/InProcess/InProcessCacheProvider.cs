@@ -245,6 +245,13 @@ namespace MindSung.Caching.Providers.InProcess
             return value;
         }
 
+        public Task ResetSynchronizationContext(string context)
+        {
+            SemaphoreSlim _;
+            semaphores.TryRemove(context, out _);
+            return Task.FromResult(true);
+        }
+
         public void Dispose()
         {
         }

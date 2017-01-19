@@ -291,6 +291,11 @@ namespace MindSung.Caching.Providers.Redis
             return sync.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }
 
+        public Task ResetSynchronizationContext(string context)
+        {
+            return sync.ResetSynchronizationContext(context);
+        }
+
         public void Dispose()
         {
             if (sub != null)

@@ -21,6 +21,7 @@ namespace MindSung.Caching
         Task Synchronize(string context, Func<Task> action, TimeSpan? timeout = null, int maxConcurrent = 1);
         Task<T> SynchronizeGetOrAdd(string key, Func<T> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null);
         Task<T> SynchronizeGetOrAdd(string key, Func<Task<T>> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null);
+        Task ResetSynchronizationContext(string context);
     }
 
     public interface ICacheProvider : ICacheProvider<string>

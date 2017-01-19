@@ -79,7 +79,7 @@ namespace MindSung.Caching.Providers
             return value;
         }
 
-        public async Task ResetContext(string context)
+        public async Task ResetSynchronizationContext(string context)
         {
             var ctxKey = $"syncctx/{context}";
             var qKey = $"syncq/{context}";
