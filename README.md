@@ -35,7 +35,5 @@ namespace MindSung.Caching
 ```
 ## Implementations
 Implementations in this repository include:
-* **MindSung.Caching.Providers.InProcess.InProcessCacheProvider**
- * A light-weight in-process memory cache, ideal for testing and single-instance server applications
-* **MindSung.Caching.Providers.Redis.RedisProvider**
- * An interface to the popular [Redis](https://redis.io/) cache
+* **MindSung.Caching.Providers.InProcess.InProcessCacheProvider** - A light-weight in-process memory cache, ideal for testing and single-instance server applications
+* **MindSung.Caching.Providers.Redis.RedisProvider** - An interface to the popular [Redis](https://redis.io/) cache
