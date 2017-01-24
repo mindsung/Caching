@@ -3,6 +3,7 @@ MindSung.Caching is a library that defines an injectable interface and implement
 ## **ICacheProvider** Interface
 The interface currently includes:
 * Basic (CRUD) cache operations
+* Key-change subscription
 * Awaitable queue operations
 * Thread and process synchronization using the shared queue
 ```C#
@@ -34,5 +35,7 @@ namespace MindSung.Caching
 ```
 ## Implementations
 Implementations in this repository include:
-* In-process memory cache - **MindSung.Caching.Providers.InProcess.InProcessCacheProvider**
-* [Redis](https://redis.io/) - **MindSung.Caching.Providers.Redis.RedisProvider**
+* **MindSung.Caching.Providers.InProcess.InProcessCacheProvider**
+ * A light-weight in-process memory cache, ideal for testing and single-instance server applications
+* **MindSung.Caching.Providers.Redis.RedisProvider**
+ * An interface to the popular [Redis](https://redis.io/) cache
