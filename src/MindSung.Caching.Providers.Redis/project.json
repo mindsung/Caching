@@ -1,5 +1,20 @@
 {
   "version": "0.1.0-*",
+  "description": "MindSung.Caching.Providers.Redis is a cache provider implementation for the popular Redis cache.",
+  "authors": [ "Robb Eads" ],
+  "owners": [ "MindSung" ],
+  "projectUrl": "https://github.com/mindsung/Caching",
+
+  "packOptions": {
+    "owners": [ "MindSung" ],
+    "projectUrl": "https://github.com/mindsung/Caching",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/mindsung/Caching"
+    },
+    "summary": "MindSung.Caching.Providers.Redis is a cache provider implementation for the popular Redis cache.",
+    "tags": [ "cache", "caching", "redis" ]
+  },
 
   "dependencies": {
     "MindSung.Caching": "0.1.0-*",

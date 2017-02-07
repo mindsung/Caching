@@ -1,5 +1,20 @@
 {
   "version": "0.1.0-*",
+  "description": "MindSung.Caching is a library that defines an injectable interface and implementations for providing shared cache services.",
+  "authors": [ "Robb Eads" ],
+  "owners": [ "MindSung" ],
+  "projectUrl": "https://github.com/mindsung/Caching",
+
+  "packOptions": {
+    "owners": [ "MindSung" ],
+    "projectUrl": "https://github.com/mindsung/Caching",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/mindsung/Caching"
+    },
+    "summary": "MindSung.Caching is a library that defines an injectable interface and implementations for providing shared cache services.",
+    "tags": [ "cache", "caching" ]
+  },
 
   "dependencies": {
   },
