@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1-*",
+  "version": "0.1.1",
   "description": "MindSung.Caching is a library that defines an injectable interface and implementations for providing shared cache services.",
   "authors": [ "Robb Eads" ],
   "owners": [ "MindSung" ],

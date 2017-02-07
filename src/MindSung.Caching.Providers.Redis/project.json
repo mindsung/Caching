@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-*",
+  "version": "0.1.1",
   "description": "MindSung.Caching.Providers.Redis is a cache provider implementation for the popular Redis cache.",
   "authors": [ "Robb Eads" ],
   "owners": [ "MindSung" ],
@@ -17,7 +17,7 @@
   },
 
   "dependencies": {
-    "MindSung.Caching": "0.1.1-*",
+    "MindSung.Caching": "0.1.*",
     "StackExchange.Redis": "1.2.0"
   },
 

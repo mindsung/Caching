@@ -1,13 +1,13 @@
 ﻿{
-  "version": "1.0.0-*",
+  "version": "1.0.0",
 
   "testRunner": "xunit",
 
   "dependencies": {
     "xunit": "2.2.0-beta2-build3300",
     "dotnet-test-xunit": "2.2.0-preview2-build1029",
-    "MindSung.Caching": "0.1.1-*",
-    "MindSung.Caching.Providers.Redis": "0.1.0-*"
+    "MindSung.Caching": "0.1.*",
+    "MindSung.Caching.Providers.Redis": "0.1.*"
   },
 
   "frameworks": {
