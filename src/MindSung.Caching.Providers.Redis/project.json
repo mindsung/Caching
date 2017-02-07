@@ -17,7 +17,7 @@
   },
 
   "dependencies": {
-    "MindSung.Caching": "0.1.0-*",
+    "MindSung.Caching": "0.1.1-*",
     "StackExchange.Redis": "1.2.0"
   },
 

@@ -259,4 +259,11 @@ namespace MindSung.Caching.Providers.InProcess
         {
         }
     }
+
+    public class InProcessCacheProvider : InProcessCacheProvider<string>, ICacheProvider
+    {
+        public InProcessCacheProvider(string cacheName, bool slidingExpiry) : base(cacheName, slidingExpiry)
+        {
+        }
+    }
 }

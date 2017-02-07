@@ -455,7 +455,7 @@ namespace MindSung.Test.Caching
 
     public class InProc : CacheTests
     {
-        private InProcessCacheProviderFactory<string> inProcFactory = new InProcessCacheProviderFactory<string>();
+        private InProcessCacheProviderFactory inProcFactory = new InProcessCacheProviderFactory();
 
         public override ICacheProviderFactory<string> Factory
         {
