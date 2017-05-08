@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MindSung.Caching.Providers.Redis is a cache provider implementation for the popular Redis cache.</Description>
+    <VersionPrefix>0.1.1</VersionPrefix>
+    <Authors>Robb Eads</Authors>
+    <TargetFrameworks>net451;netstandard1.6</TargetFrameworks>
+    <AssemblyName>MindSung.Caching.Providers.Redis</AssemblyName>
+    <PackageId>MindSung.Caching.Providers.Redis</PackageId>
+    <PackageTags>cache;caching;redis</PackageTags>
+    <PackageProjectUrl>https://github.com/mindsung/Caching</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/mindsung/Caching</RepositoryUrl>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MindSung.Caching\MindSung.Caching.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>

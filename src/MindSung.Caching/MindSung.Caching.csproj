@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MindSung.Caching is a library that defines an injectable interface and implementations for providing shared cache services.</Description>
+    <VersionPrefix>0.1.2</VersionPrefix>
+    <Authors>Robb Eads</Authors>
+    <TargetFrameworks>net451;netstandard1.6</TargetFrameworks>
+    <AssemblyName>MindSung.Caching</AssemblyName>
+    <PackageId>MindSung.Caching</PackageId>
+    <PackageTags>cache;caching</PackageTags>
+    <PackageProjectUrl>https://github.com/mindsung/Caching</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/mindsung/Caching</RepositoryUrl>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+  </PropertyGroup>
+
+</Project>

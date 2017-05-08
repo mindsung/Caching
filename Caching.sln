@@ -1,17 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{97D23BE8-A35A-452D-A308-EE9E33DDF45A}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MindSung.Caching", "src\MindSung.Caching\MindSung.Caching.xproj", "{DE3B1184-23F3-45FD-9C12-FA9D2ACD9AB9}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MindSung.Caching.Providers.Redis", "src\MindSung.Caching.Providers.Redis\MindSung.Caching.Providers.Redis.xproj", "{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2FCC3905-231D-4181-B65D-703E94DD9423}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MindSung.Test.Caching", "test\MindSung.Test.Caching\MindSung.Test.Caching.xproj", "{D649B114-58AC-49FD-A649-1F790C4C4923}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MindSung.Caching", "src\MindSung.Caching\MindSung.Caching.csproj", "{DE3B1184-23F3-45FD-9C12-FA9D2ACD9AB9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MindSung.Caching.Providers.Redis", "src\MindSung.Caching.Providers.Redis\MindSung.Caching.Providers.Redis.csproj", "{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MindSung.Test.Caching", "test\MindSung.Test.Caching\MindSung.Test.Caching.csproj", "{D649B114-58AC-49FD-A649-1F790C4C4923}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
