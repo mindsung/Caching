@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <Description>MindSung.Caching is a library that defines an injectable interface and implementations for providing shared cache services.</Description>
-    <VersionPrefix>0.1.2</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <Authors>Robb Eads</Authors>
-    <TargetFrameworks>net451;net462;netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>net451;netstandard1.6</TargetFrameworks>
     <AssemblyName>MindSung.Caching</AssemblyName>
     <PackageId>MindSung.Caching</PackageId>
     <PackageTags>cache;caching</PackageTags>
