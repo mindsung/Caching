@@ -25,17 +25,17 @@ namespace MindSung.Caching.Providers
             }
             var ctxKey = $"syncctx/{context}";
             var qKey = $"syncq/{context}";
-            if (await cacheProvider.Add(ctxKey, anyValue, TimeSpan.MaxValue))
+            if (await cacheProvider.AddAsync(ctxKey, anyValue, TimeSpan.MaxValue))
             {
                 // We're the lucky one that gets to initialized the semaphore.
                 for (int i = 0; i < maxConcurrent - 1; i++)
                 {
-                    var nowait = cacheProvider.QueuePush(qKey, anyValue);
+                    var nowait = cacheProvider.QueuePushAsync(qKey, anyValue);
                 }
             }
             else
             {
-                var qval = await cacheProvider.QueuePop(qKey, timeout);
+                var qval = await cacheProvider.QueuePopAsync(qKey, timeout);
                 if (!qval.HasValue)
                 {
                     throw new TimeoutException($"Timeout waiting for synchronization context {context}.");
@@ -47,7 +47,7 @@ namespace MindSung.Caching.Providers
             }
             finally
             {
-                var nowait = cacheProvider.QueuePush(qKey, anyValue);
+                var nowait = cacheProvider.QueuePushAsync(qKey, anyValue);
             }
         }
 
@@ -62,14 +62,14 @@ namespace MindSung.Caching.Providers
 
             await Synchronize(key, async () =>
             {
-                var cacheVal = await cacheProvider.Get(key);
+                var cacheVal = await cacheProvider.GetAsync(key);
                 if (!cacheVal.HasValue)
                 {
                     value = await valueFactory();
                     // This should always be adding, but do a Set instead of Add
                     // to ensure that even if something isn't working correctly,
                     // the returned value will be the last value in cache.
-                    await cacheProvider.Set(key, value, expiry);
+                    await cacheProvider.SetAsync(key, value, expiry);
                 }
                 else
                 {
@@ -85,8 +85,8 @@ namespace MindSung.Caching.Providers
         {
             var ctxKey = $"syncctx/{context}";
             var qKey = $"syncq/{context}";
-            await cacheProvider.Delete(ctxKey);
-            await cacheProvider.QueueClear(qKey);
+            await cacheProvider.DeleteAsync(ctxKey);
+            await cacheProvider.QueueClearAsync(qKey);
         }
     }
 }

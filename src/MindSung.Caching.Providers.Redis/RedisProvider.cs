@@ -57,7 +57,47 @@ namespace MindSung.Caching.Providers.Redis
             return FullKey(key) + "/ttl";
         }
 
-        private async Task<bool> SetOrAdd(string key, string value, TimeSpan? expiry, bool isAdd)
+        private bool SetOrAdd(string key, string value, TimeSpan? expiry, bool isAdd)
+        {
+            var setResult = Database.StringSet(FullKey(key), value, expiry, isAdd ? When.NotExists : When.Always);
+            if (slidingExpiry && expiry.HasValue)
+            {
+                Database.StringSet(ExpiryKey(key), (long)expiry.Value.TotalMilliseconds, expiry, isAdd ? When.NotExists : When.Always);
+            }
+            if (setResult)
+            {
+                PublishSet(key);
+            }
+            return setResult;
+        }
+
+        public bool Add(string key, string value, TimeSpan? expiry)
+        {
+            if (key == null)
+            {
+                throw new ArgumentException("Cache key cannot be null.", nameof(key));
+            }
+            if (value == null)
+            {
+                throw new ArgumentException("Cache value cannot be null.", nameof(value));
+            }
+            return SetOrAdd(key, value, expiry, true);
+        }
+
+        public void Set(string key, string value, TimeSpan? expiry)
+        {
+            if (key == null)
+            {
+                throw new ArgumentException("Cache key cannot be null.", nameof(key));
+            }
+            if (value == null)
+            {
+                throw new ArgumentException("Cache value cannot be null.", nameof(value));
+            }
+            SetOrAdd(key, value, expiry, false);
+        }
+
+        private async Task<bool> SetOrAddAsync(string key, string value, TimeSpan? expiry, bool isAdd)
         {
             var tasks = new Task<bool>[2];
             tasks[0] = Database.StringSetAsync(FullKey(key), value, expiry, isAdd ? When.NotExists : When.Always);
@@ -72,7 +112,7 @@ namespace MindSung.Caching.Providers.Redis
             return tasks[0].Result;
         }
 
-        public Task<bool> Add(string key, string value, TimeSpan? expiry)
+        public Task<bool> AddAsync(string key, string value, TimeSpan? expiry)
         {
             if (key == null)
             {
@@ -82,10 +122,10 @@ namespace MindSung.Caching.Providers.Redis
             {
                 throw new ArgumentException("Cache value cannot be null.", nameof(value));
             }
-            return SetOrAdd(key, value, expiry, true);
+            return SetOrAddAsync(key, value, expiry, true);
         }
 
-        public Task Set(string key, string value, TimeSpan? expiry)
+        public Task SetAsync(string key, string value, TimeSpan? expiry)
         {
             if (key == null)
             {
@@ -95,10 +135,37 @@ namespace MindSung.Caching.Providers.Redis
             {
                 throw new ArgumentException("Cache value cannot be null.", nameof(value));
             }
-            return SetOrAdd(key, value, expiry, false);
+            return SetOrAddAsync(key, value, expiry, false);
         }
 
-        public async Task<ICacheValue<string>> Get(string key)
+        public ICacheValue<string> Get(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentException("Cache key cannot be null.", nameof(key));
+            }
+            var getResult = Database.StringGet(FullKey(key));
+            var ttlResult = slidingExpiry ? Database.StringGet(ExpiryKey(key)) : RedisValue.Null;
+            TimeSpan? expiry = null;
+            if (getResult.HasValue && ttlResult.HasValue)
+            {
+                expiry = TimeSpan.FromMilliseconds((long)ttlResult);
+            }
+            if (getResult.HasValue && expiry.HasValue)
+            {
+                Database.KeyExpire(FullKey(key), expiry);
+                Database.KeyExpire(ExpiryKey(key), expiry);
+            }
+            var value = new CacheValue<string>();
+            if (getResult.HasValue)
+            {
+                value.HasValue = true;
+                value.Value = getResult;
+            }
+            return value;
+        }
+
+        public async Task<ICacheValue<string>> GetAsync(string key)
         {
             if (key == null)
             {
@@ -127,7 +194,25 @@ namespace MindSung.Caching.Providers.Redis
             return value;
         }
 
-        public async Task<bool> Delete(string key)
+        public bool Delete(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentException("Cache key cannot be null.", nameof(key));
+            }
+            var delResult = Database.KeyDelete(FullKey(key));
+            if (slidingExpiry)
+            {
+                Database.KeyDelete(ExpiryKey(key));
+            }
+            if (delResult)
+            {
+                PublishDelete(key);
+            }
+            return delResult;
+        }
+
+        public async Task<bool> DeleteAsync(string key)
         {
             if (key == null)
             {
@@ -160,12 +245,12 @@ namespace MindSung.Caching.Providers.Redis
             }
         }
 
-        public Task<Guid> Subscribe(string key, Action<string> onSet, Action<string> onDelete)
+        public Task<Guid> SubscribeAsync(string key, Action<string> onSet, Action<string> onDelete)
         {
-            return Subscribe(key, async k => { onSet(k); await Task.FromResult(true); }, async k => { onDelete(k); await Task.FromResult(true); });
+            return SubscribeAsync(key, async k => { onSet(k); await Task.FromResult(true); }, async k => { onDelete(k); await Task.FromResult(true); });
         }
 
-        public async Task<Guid> Subscribe(string key, Func<string, Task> onSet, Func<string, Task> onDelete)
+        public async Task<Guid> SubscribeAsync(string key, Func<string, Task> onSet, Func<string, Task> onDelete)
         {
             if (key == null)
             {
@@ -192,7 +277,7 @@ namespace MindSung.Caching.Providers.Redis
             return subHelper.AddSubscription(key, onSet, onDelete);
         }
 
-        public Task Unsubscribe(string key, Guid subscriptionId)
+        public Task UnsubscribeAsync(string key, Guid subscriptionId)
         {
             if (key == null)
             {
@@ -212,14 +297,14 @@ namespace MindSung.Caching.Providers.Redis
             return FullKey(QueueKey(queueName));
         }
 
-        public Task QueuePush(string queueName, string value)
+        public Task QueuePushAsync(string queueName, string value)
         {
             var task = Database.ListLeftPushAsync(FullQueueKey(queueName), value);
             PublishSet(QueueKey(queueName));
             return task;
         }
 
-        public async Task<ICacheValue<string>> QueuePop(string queueName, TimeSpan? timeout = null)
+        public async Task<ICacheValue<string>> QueuePopAsync(string queueName, TimeSpan? timeout = null)
         {
             if (!timeout.HasValue || timeout.Value == TimeSpan.Zero)
             {
@@ -235,7 +320,7 @@ namespace MindSung.Caching.Providers.Redis
             // That is why we need to have a new task completion source ready to be
             // set by the subsriber before each attempt to pop.
             var pushed = new TaskCompletionSource<bool>();
-            var subId = await Subscribe(QueueKey(queueName), _ => pushed.TrySetResult(true), null);
+            var subId = await SubscribeAsync(QueueKey(queueName), _ => pushed.TrySetResult(true), null);
             try
             {
                 var value = await Database.ListRightPopAsync(FullQueueKey(queueName));
@@ -259,13 +344,13 @@ namespace MindSung.Caching.Providers.Redis
             }
             finally
             {
-                var nowait = Unsubscribe(QueueKey(queueName), subId);
+                var nowait = UnsubscribeAsync(QueueKey(queueName), subId);
             }
         }
 
-        public Task QueueClear(string queueName)
+        public Task QueueClearAsync(string queueName)
         {
-            return Delete(QueueKey(queueName));
+            return DeleteAsync(QueueKey(queueName));
         }
 
         public Task Synchronize(string context, Action action, TimeSpan? timeout = null, int maxConcurrent = 1)
@@ -278,12 +363,12 @@ namespace MindSung.Caching.Providers.Redis
             return syncHelper.Synchronize(context, action, "1", timeout, maxConcurrent);
         }
 
-        public Task<string> SynchronizeGetOrAdd(string key, Func<string> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
+        public Task<string> GetOrAddAsync(string key, Func<string> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
         {
             return syncHelper.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }
 
-        public Task<string> SynchronizeGetOrAdd(string key, Func<Task<string>> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
+        public Task<string> GetOrAddAsync(string key, Func<Task<string>> valueFactory, TimeSpan? expiry = null, TimeSpan? syncTimeout = null)
         {
             return syncHelper.SynchronizeGetOrAdd(key, valueFactory, "1", expiry, syncTimeout);
         }
