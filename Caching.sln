@@ -13,6 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MindSung.Caching.Providers.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MindSung.Test.Caching", "test\MindSung.Test.Caching\MindSung.Test.Caching.csproj", "{D649B114-58AC-49FD-A649-1F790C4C4923}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{09638E09-3A84-41EE-89C4-A6C42AF1DA6F}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,5 +44,8 @@ Global
 		{DE3B1184-23F3-45FD-9C12-FA9D2ACD9AB9} = {97D23BE8-A35A-452D-A308-EE9E33DDF45A}
 		{F9720EB8-3DF7-49BF-9BE7-D062CFDD06C1} = {97D23BE8-A35A-452D-A308-EE9E33DDF45A}
 		{D649B114-58AC-49FD-A649-1F790C4C4923} = {2FCC3905-231D-4181-B65D-703E94DD9423}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3E5BF908-AED8-44EC-8892-E0923888CFEA}
 	EndGlobalSection
 EndGlobal
