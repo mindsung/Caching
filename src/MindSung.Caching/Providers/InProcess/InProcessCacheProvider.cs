@@ -226,7 +226,7 @@ namespace MindSung.Caching.Providers.InProcess
                 throw new ArgumentException("Max concurrent cannot be less than 1.", nameof(maxConcurrent));
             }
             var sem = semaphores.GetOrAdd(context, new SemaphoreSlim(maxConcurrent, maxConcurrent));
-            if (!(await sem.WaitAsync(timeout.HasValue ? timeout.Value : TimeSpan.MaxValue)))
+            if (!(await sem.WaitAsync(timeout.HasValue ? timeout.Value : TimeSpan.FromDays(1))))
             {
                 throw new TimeoutException($"Timeout waiting for synchronization context {context}.");
             }
