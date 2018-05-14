@@ -193,7 +193,7 @@ namespace MindSung.Caching.MemoryCacheBase
             {
                 part.keySet.Remove(entry.key);
                 cacheSet.expirySet.Remove(entry);
-                if (allowEviction) cacheSet.lruSet.Remove(entry.lruNode);
+                if (allowEviction && entry.lruNode.List == cacheSet.lruSet) cacheSet.lruSet.Remove(entry.lruNode);
                 cacheSet.currentSize -= entry.size;
             }
 
@@ -249,7 +249,10 @@ namespace MindSung.Caching.MemoryCacheBase
                 if (allowEviction)
                 {
                     // Move to the end of LRU
-                    cacheSet.lruSet.Remove(entry.lruNode);
+                    if (entry.lruNode.List == cacheSet.lruSet)
+                    {
+                        cacheSet.lruSet.Remove(entry.lruNode);
+                    }
                     cacheSet.lruSet.AddLast(entry.lruNode);
                 }
             }
